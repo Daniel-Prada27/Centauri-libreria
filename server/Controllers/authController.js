@@ -2,23 +2,27 @@ import bcrypt from 'bcrypt';
 import { prisma } from '../prisma.js';
 
 export const login = async (req, res) => {
-  const { usuario, clave } = req.body;
+  const { correo, clave } = req.body;
+
+  if (!correo || !clave) {
+    return res.status(400).json({ mensaje: 'Correo y clave son obligatorios' });
+  }
 
   try {
-    // Buscar usuario por correo
+    // Buscar usuario únicamente por correo
     const usuarioEncontrado = await prisma.usuarios.findFirst({
-      where: {correo: usuario }
+      where: { correo: correo }
     });
 
     if (!usuarioEncontrado) {
-      return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+      return res.status(401).json({ mensaje: 'Credenciales inválidas' });
     }
 
     // Verificar clave
     const claveValida = await bcrypt.compare(clave, usuarioEncontrado.clave);
 
     if (!claveValida) {
-      return res.status(401).json({ mensaje: 'Clave incorrecta' });
+      return res.status(401).json({ mensaje: 'Credenciales inválidas' });
     }
 
     // Guardar en sesión
